@@ -7,12 +7,12 @@ import numpy as np
 
 # Import and cleaning
 ## subset columns to get email, first and last name, and cohort preferences
-df = pd.read_csv('./data/data_1.csv')
+df = pd.read_csv('./data/form_sheet.csv')
 df = df[[col for col in df.columns if (("Preferences" in col) | ("Email" in col) | ("Name" in col) | ("Year" in col))]]
-df.columns = list(df.columns[0:3]) + [re.split('\[|\]',name)[1] for name in df.columns[3:]]
+df.columns = list(df.columns[0:4]) + [re.split('\[|\]',name)[1] for name in df.columns[4:]]
 
 ## converting rankings into numbers
-cohort_names = list(df.columns[3:])
+cohort_names = list(df.columns[4:])
 for col in cohort_names:
     df[col] = pd.to_numeric(df[col].str.extract('(\d)', expand=False).str.strip())
 df.fillna(0,inplace=True)
@@ -34,18 +34,18 @@ assigned = sum(cohorts.values(), [])
 leftovers = list(set(assigned).symmetric_difference(set(df['Email Address'].tolist())))
 
 if len(leftovers) != 0:
-    df[df['Email Address'].isin(leftovers)].to_csv(path_or_buf='./assignments/leftovers.csv')
+    df[df['Email Address'].isin(leftovers)].to_csv(path_or_buf='./assignments/leftovers.csv',index=False)
 
 # output assignments as csv
 ## all cohort assignments and emails
-temp = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in cohorts.items()]))
+cohort_assignments = pd.DataFrame(dict([(k,pd.Series(v)) for k,v in cohorts.items()]))
 cohort_assignments.fillna('',inplace=True)
-cohort_assignments.to_csv(path_or_buf='./assignments/all_emails.csv')
+cohort_assignments.to_csv(path_or_buf='./assignments/all_emails.csv',index=False)
 
 ## each individual cohort spreadsheet with first name, last name, email, year
 for cohort, emails in cohorts.items():
     temp = df[df['Email Address'].isin(emails)]
-    indiv_assign = temp[[col for col in temp.columns if ("Preferences" not in col)]]
+    indiv_assign = temp[[col for col in temp.columns if (("Email" in col) or ("Name" in col) or ("Year" in col))]]
     
     path = './assignments/' + '_'.join(cohort.lower().split(' ')) + '.csv'
-    indiv_assign.to_csv(path_or_buf=path)
+    indiv_assign.to_csv(path_or_buf=path,index=False)
